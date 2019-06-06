@@ -1,7 +1,7 @@
 # GradeTreeCPS
 A grade tracker app for CPS students.
 
-Check your grade, attendance, schedule and all the things you want to know know about your school life using GradeTree.
+Check your grade, attendance, schedule and all the things you want to know and need to know about your school life using GradeTree.
 
 ## Build and run the project
 This project uses Expo and React Native. In order to build and run the project, you have to install Expo-Cli first.

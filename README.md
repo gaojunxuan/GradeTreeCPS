@@ -1,5 +1,6 @@
 # GradeTreeCPS
-A grade tracker app for CPS students
+A grade tracker app for CPS students.
+
 Check your grade, attendance, schedule and all the things you want to know know about your school life using GradeTree.
 
 ## Build and run the project

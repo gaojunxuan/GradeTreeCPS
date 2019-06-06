@@ -6,6 +6,7 @@ import { HiddenWebView } from '../components/HiddenWebView';
 import cio from 'cheerio-without-node-native';
 import Networking from '../helpers/Networking';
 import { Icon } from 'expo';
+import { Platform } from 'react-native';
 
 var self;
 export default class AcademicsScreen extends React.Component {
@@ -20,10 +21,15 @@ export default class AcademicsScreen extends React.Component {
                 if(self != null) {
                     var username = await AsyncStorage.getItem('username');
                     var password = await AsyncStorage.getItem('password');
-                    await self.loadData(username, password);
+                    try{ 
+                        await self.loadData(username, password);                        
+                    }
+                    catch(ex) {
+                        Alert.alert("Failed to reload data. Please check your Internet connection and try again.");            
+                    }
                 }
             }}>
-                <Icon.Ionicons name='ios-refresh' style={{ color: 'white', marginRight: 12 }} size={24}/>
+                <Icon.Ionicons name={Platform.OS === 'ios' ? 'ios-refresh' : 'md-refresh'} style={{ color: 'white', marginRight: 12 }} size={24}/>
             </TouchableOpacity>
         ),
     };
@@ -45,7 +51,7 @@ export default class AcademicsScreen extends React.Component {
     async loadData(username, password) {
         this.setState({ classList: [], isLoading: true });
         // login
-        const headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
+        const headers = { 'Content-Type': 'multipart/form-data', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
         const uaHeaders = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
 
         var academicsResponse = await fetch("https://aspen.cps.edu/aspen/portalClassList.do?navkey=academics.classes.list", { method: 'GET', credentials: 'include', headers: uaHeaders });
@@ -90,19 +96,34 @@ export default class AcademicsScreen extends React.Component {
                             color = "orangered";
                         if(isNaN(avg))
                             color = "lightgrey";
+                        var gradeMark = 'A';
+                        if(avg < 90) {
+                            if(avg >= 80)
+                                gradeMark = 'B';
+                            else {
+                                if(avg >= 70)
+                                    gradeMark = 'C';
+                                else {
+                                    if(avg >= 60)
+                                        gradeMark = 'D'
+                                    else
+                                        gradeMark = 'F'
+                                }
+                            }
+                        }
                         return (
                             <View key={item.code} style={{ marginBottom: 24 }}>
                                 <TouchableOpacity onPress={()=>{
                                     this.props.navigation.push('AssignmentList', { code: item.code, name: name });
                                 }}>
                                     <View style={{ flexDirection: 'row' }}>
-                                        <View style={{ flexDirection: 'column', flex: 1 }}>
+                                        <View style={{ flexDirection: 'column', flex: 1.5 }}>
                                             <Text style={{ fontSize: 18 }}>{name}</Text>
                                             <Text style={{ fontSize: 14, color: 'grey', marginTop: 4 }}>{teacher}</Text>
                                         </View>
                                         <View style={{ flex: 1, alignSelf: 'center', alignItems: 'flex-end' }}>
                                             <View style={{ flexDirection: 'row', height: 24, width: 80, backgroundColor: color, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}>
-                                                <Text style={{ fontSize: 16, color: 'white', flex: 1, alignSelf: 'center', textAlign: 'center' }}>{isNaN(avg) ? "N/A" : avg}</Text>
+                                                <Text style={{ fontSize: 16, color: 'white', flex: 1, alignSelf: 'center', textAlign: 'center' }}>{isNaN(avg) ? "N/A" : avg + ' ' + gradeMark}</Text>
                                             </View>
                                         </View>
                                     </View>

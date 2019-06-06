@@ -45,7 +45,7 @@ export default class LoginScreen extends React.Component {
                         onBlur={()=>this.setState({ passwordFocused: false })}
                         textContentType='password'
                         secureTextEntry={true}
-                        keyboardType='visible-password'
+                        
                         clearButtonMode='while-editing'
                         onChangeText={(text) => this.setState({password: text})}
                         value={this.state.password}
@@ -55,7 +55,7 @@ export default class LoginScreen extends React.Component {
                 <TouchableBounce style={{ height: 64, width: 100, position: 'absolute', left: 32, bottom: 48 }} onPress={async() => {
                     if(this.state.username != "" && this.state.password != "") {
                         try {
-                            const headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
+                            const headers = { 'Content-Type': 'multipart/form-data', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
                             const uaHeaders = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
 
                             var form = new FormData();
@@ -63,20 +63,17 @@ export default class LoginScreen extends React.Component {
                             form.append("username", this.state.username);
                             form.append("password", this.state.password);
                             form.append("deploymentId", "aspen");
-                            var testResponse = await fetch("https://aspen.cps.edu/aspen/home.do", { method: 'GET', credentials: 'include', headers: uaHeaders });
-                            if(testResponse.status != 200) {
-                                var getResponse = await fetch("https://aspen.cps.edu/aspen/logon.do", { method: 'GET', credentials: 'include', headers: uaHeaders });
-                                this.setState({ token: (await getResponse.text()).match(/name="org.apache.struts.taglib.html.TOKEN" value="(.*?)"/)[1] });
-                                form.append("org.apache.struts.taglib.html.TOKEN", this.state.token);
-                                var postResponse = await fetch("https://aspen.cps.edu/a spen/logon.do", { method: 'POST', body: form, headers: headers, credentials: 'include'  });
-                                testResponse = await fetch("https://aspen.cps.edu/aspen/home.do", { method: 'GET', credentials: 'include', headers: uaHeaders });
-                                if(testResponse.status != 200)
-                                    Alert.alert('Failed to login.')
-                                else {
-                                    await AsyncStorage.setItem('username', this.state.username);
-                                    await AsyncStorage.setItem('password', this.state.password);
-                                    Updates.reload();
-                                }
+                            var testResponse = await fetch("https://aspen.cps.edu/aspen/home.do", { method: 'GET', headers: uaHeaders, credentials: 'include' });
+                            var getResponse = await fetch("https://aspen.cps.edu/aspen/logon.do", { method: 'GET', headers: uaHeaders, credentials: 'include' });
+                            this.setState({ token: (await getResponse.text()).match(/name="org.apache.struts.taglib.html.TOKEN" value="(.*?)"/)[1] });
+                            form.append("org.apache.struts.taglib.html.TOKEN", this.state.token);
+                            var postResponse = await fetch("https://aspen.cps.edu/aspen/logon.do", { method: 'POST', body: form, headers: headers, credentials: 'include'  });
+                            //Alert.alert("DEBUG", await postResponse.text());
+                            testResponse = await fetch("https://aspen.cps.edu/aspen/home.do", { method: 'GET', credentials: 'include', headers: uaHeaders });
+                            if(testResponse.status != 200)
+                            {
+                                Alert.alert('Failed to login', 'Status code: ' + testResponse.status);
+                                //Alert.alert(await testResponse.text());
                             }
                             else {
                                 await AsyncStorage.setItem('username', this.state.username);
@@ -86,7 +83,7 @@ export default class LoginScreen extends React.Component {
                             
                         }
                         catch(ex) {
-                            Alert.alert('Failed to login.\n' + ex.toString());
+                            Alert.alert('Failed to login.', 'Error message: ' + ex.toString());
                         }
                     }
                     

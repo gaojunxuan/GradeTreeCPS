@@ -11,6 +11,8 @@ import ProfileScreen from '../screens/ProfileScreen';
 import AssignmentListScreen from '../screens/AssignmentListScreen';
 import Colors from '../constants/Colors';
 import AssignmentDetailScreen from '../screens/AssignmentDetailScreen';
+import TranscriptScreen from '../screens/TranscriptScreen';
+import ScheduleScreen from '../screens/ScheduleScreen';
 
 
 const HomeStack = createStackNavigator({
@@ -63,6 +65,8 @@ AttendanceStack.navigationOptions = {
 
 const ProfileStack = createStackNavigator({
   Profile: ProfileScreen,
+  Transcript: TranscriptScreen,
+  Schedule: ScheduleScreen
 });
 
 ProfileStack.navigationOptions = {

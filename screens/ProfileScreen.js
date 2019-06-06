@@ -8,6 +8,7 @@ import Barcode from 'react-native-barcode-builder';
 import { Updates } from 'expo';
 import Networking from '../helpers/Networking';
 import { Icon } from 'expo';
+import { Platform } from 'react-native';
 
 var self;
 export default class ProfileScreen extends React.Component {
@@ -22,17 +23,22 @@ export default class ProfileScreen extends React.Component {
                 if(self != null) {
                     var username = await AsyncStorage.getItem('username');
                     var password = await AsyncStorage.getItem('password');
-                    await self.loadData(username, password);
+                    try {
+                        await self.loadData(username, password);
+                    }
+                    catch(ex) {
+                        Alert.alert("Failed to reload data. Please check your Internet connection and try again.");            
+                    }
                 }
             }}>
-                <Icon.Ionicons name='ios-refresh' style={{ color: 'white', marginRight: 12 }} size={24}/>
+                <Icon.Ionicons name={Platform.OS === 'ios' ? 'ios-refresh' : 'md-refresh'} style={{ color: 'white', marginRight: 12 }} size={24}/>
             </TouchableOpacity>
         ),
         headerLeft: (
             <TouchableOpacity onPress={async()=>{
-                Alert.alert("About", "\nThis app is developed and designed by Kevin Gao, a student from Jones College Prep, who has no affiliation with CPS and Follett Corporation. If you have any question or feedback on this app, please contact me through email. \n\nThis app is made possible by React Native, Expo and other open source projects.")
+                Alert.alert("About", "This app is developed and designed by Kevin Gao, a student from Jones College Prep, who has no affiliation with CPS and Follett Corporation. If you have any question or feedback on this app, please contact me through email. \n\nThis app is made possible by React Native, Expo and other open source projects.")
             }}>
-                <Icon.Ionicons name='ios-information-circle-outline' style={{ color: 'white', marginLeft: 16 }} size={24}/>
+                <Icon.Ionicons name={Platform.OS === 'ios' ? 'ios-information-circle-outline' : 'md-information-circle-outline'} style={{ color: 'white', marginLeft: 16 }} size={24}/>
             </TouchableOpacity>
         )
     };
@@ -53,7 +59,7 @@ export default class ProfileScreen extends React.Component {
     }
     async loadData(username, password) {
         // headers defs
-        const headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
+        const headers = { 'Content-Type': 'multipart/form-data', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
         const uaHeaders = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
 
         // load profile page
@@ -119,7 +125,19 @@ export default class ProfileScreen extends React.Component {
                     <Text style={styles.header}>Year of Graduation</Text>
                     <Text style={{ fontSize: 16 }}>{this.state.profile.graduation}</Text>
                 </View>
-                <TouchableOpacity onPress={async() => {
+                <TouchableOpacity style={{ marginLeft: 24, marginTop: 32 }} onPress={() => this.props.navigation.push('Transcript')}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Icon.Ionicons name='ios-paper' size={26} color='#274378'></Icon.Ionicons>
+                        <Text style={{ marginLeft: 12, fontSize: 18, color: '#274378' }}>Transcript</Text>
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ marginLeft: 24, marginTop: 24 }} onPress={() => this.props.navigation.push('Schedule')}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Icon.Ionicons name='ios-calendar' size={26} color='#274378'></Icon.Ionicons>
+                        <Text style={{ marginLeft: 12, fontSize: 18, color: '#274378' }}>Schedule</Text>
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ marginBottom: 64 }} onPress={async() => {
                     await AsyncStorage.removeItem('username');
                     await AsyncStorage.removeItem('password');
                     await AsyncStorage.setItem('refreshCookie', 'true');

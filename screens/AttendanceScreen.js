@@ -5,6 +5,7 @@ import axios from 'axios';
 import { HiddenWebView } from '../components/HiddenWebView';
 import cio from 'cheerio-without-node-native';
 import Networking from '../helpers/Networking';
+import { Platform } from 'react-native';
 
 var self;
 export default class AttendanceScreen extends React.Component {
@@ -19,10 +20,15 @@ export default class AttendanceScreen extends React.Component {
                 if(self != null) {
                     var username = await AsyncStorage.getItem('username');
                     var password = await AsyncStorage.getItem('password');
-                    await self.loadData(username, password);
+                    try {
+                        await self.loadData(username, password);
+                    }
+                    catch(ex) {
+                        Alert.alert("Failed to reload data. Please check your Internet connection and try again.");            
+                    }
                 }
             }}>
-                <Icon.Ionicons name='ios-refresh' style={{ color: 'white', marginRight: 12 }} size={24}/>
+                <Icon.Ionicons name={Platform.OS === 'ios' ? 'ios-refresh' : 'md-refresh'} style={{ color: 'white', marginRight: 12 }} size={24}/>
             </TouchableOpacity>
         ),
     };
@@ -44,7 +50,7 @@ export default class AttendanceScreen extends React.Component {
     async loadData(username, password) {
         this.setState({ attendance: [], isLoading: true });
         // login
-        const headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
+        const headers = { 'Content-Type': 'multipart/form-data', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
         const uaHeaders = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36' };
         
         // get attendance page

@@ -1,6 +1,5 @@
 import React from 'react';
 import { ScrollView, StyleSheet, WebView, Text, View, Button, FlatList, ActivityIndicator, TouchableOpacity, StatusBar, Alert, AsyncStorage, TextInput } from 'react-native';
-import { ExpoLinksView } from '@expo/samples';
 import { Updates } from 'expo';
 import { HiddenWebView } from '../components/HiddenWebView';
 import cio from 'cheerio-without-node-native';

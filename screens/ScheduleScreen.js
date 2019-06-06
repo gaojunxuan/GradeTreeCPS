@@ -1,7 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, WebView, Text, View, Button, FlatList, Image, Alert, AsyncStorage, TouchableOpacity, StatusBar, ActivityIndicator } from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import axios from 'axios';
 import { HiddenWebView } from '../components/HiddenWebView';
 import cio from 'cheerio-without-node-native';
 import Barcode from 'react-native-barcode-builder';

@@ -1,7 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, WebView, Text, View, Button, FlatList, ActivityIndicator, TouchableOpacity, StatusBar, Alert, AsyncStorage } from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import axios from 'axios';
 import { HiddenWebView } from '../components/HiddenWebView';
 import cio from 'cheerio-without-node-native';
 import Networking from '../helpers/Networking';

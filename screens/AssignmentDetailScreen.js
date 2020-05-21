@@ -67,7 +67,7 @@ export default class AssignmentDetailScreen extends React.Component {
             var color = Colors.green;
             if(score != 'Ungraded') {
                 score = score.split('%')[1]
-                if(score != null) {
+                if(score != null && score !== undefined) {
                     s = parseFloat(score.split('/')[0].trim())
                     total = parseFloat(score.split('/')[1].trim())
                     percent = s / total;
@@ -123,7 +123,9 @@ export default class AssignmentDetailScreen extends React.Component {
                     <View style={{ flex: 1, alignSelf: 'center', alignItems: 'flex-end' }}>
                       <TouchableOpacity onPress={()=>this.setState({ showPercent: !this.state.showPercent })}>
                         <View style={{ flexDirection: 'row', height: 24, width: 120, backgroundColor: color, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}>
-                          <Text style={{ fontSize: 16, color: 'white', flex: 1, alignSelf: 'center', textAlign: 'center' }}>{ this.state.showPercent ?  (percent * 100).toFixed(1) + '%' : score }</Text>
+                          <Text style={{ fontSize: 16, color: 'white', flex: 1, alignSelf: 'center', textAlign: 'center' }}>
+                            { this.state.showPercent ? ((!isNaN(percent)) ? `${(percent * 100).toFixed(1)}%` : 'N/A') : score }
+                          </Text>
                         </View>
                       </TouchableOpacity>
                     </View>

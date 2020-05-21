@@ -1,7 +1,12 @@
-const tintColor = '#274378';
+import { Appearance, AppearanceProvider, useColorScheme } from 'react-native-appearance';
+// let colorScheme = Appearance.getColorScheme();
+let colorScheme = 'light';
+
+const tintColor = '#23427C';
+const darkTintColor = '#2d55a1';
 
 export default {
-  tintColor,
+  tintColor: (colorScheme == 'dark' ? darkTintColor : tintColor),
   tabIconDefault: '#ccc',
   tabIconSelected: tintColor,
   tabBar: '#fefefe',
@@ -13,6 +18,6 @@ export default {
   noticeText: '#fff',
   green: 'limegreen',
   grey: 'lightgrey',
-  yellow: 'orange',
-  red: 'orangered'
+  yellow: 'yellowgreen',
+  red: 'orange',
 };

@@ -1,10 +1,13 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View, Alert, AsyncStorage, TouchableOpacity, StatusBar, ActivityIndicator } from 'react-native';
 import cio from 'cheerio-without-node-native';
-import DateTimePicker from 'react-native-modal-datetime-picker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import Networking from '../helpers/Networking';
 import StringHelper from '../helpers/StringHelper';
 import Colors from '../constants/Colors';
+import * as SecureStore from 'expo-secure-store';
+import CryptoHelper from '../helpers/CryptoHelper';
+import { Updates } from 'expo';
 
 export default class ScheduleScreen extends React.Component {
   static navigationOptions = ({ navigation }) => {
@@ -25,11 +28,16 @@ export default class ScheduleScreen extends React.Component {
     };
   }
 
-  async componentWillMount() {
+  async componentDidMount() {
     try {
-      const username = await AsyncStorage.getItem('username');
-      const password = await AsyncStorage.getItem('password');
-      await this.loadData(username, password, this.state.date);
+      var username = await SecureStore.getItemAsync('username');
+      var cipher = await SecureStore.getItemAsync('password');
+      if(username === null || cipher === null)
+        Updates.reload();
+      else {
+        var password = CryptoHelper.decode(cipher);
+        await this.loadData(username, password, this.state.date);
+      }
     } catch (ex) {
       Alert.alert('Failed to load data. Please check your Internet connection and try again.');
     }
@@ -58,9 +66,14 @@ export default class ScheduleScreen extends React.Component {
     const month = date.getMonth() + 1;
     const dateParsed = date.getDate();
     this.setState({ date: `${month}/${dateParsed}/${year}` });
-    const username = await AsyncStorage.getItem('username');
-    const password = await AsyncStorage.getItem('password');
-    await this.loadData(username, password, this.state.date);
+    var username = await SecureStore.getItemAsync('username');
+    var cipher = await SecureStore.getItemAsync('password');
+    if(username === null || cipher === null)
+      Updates.reload();
+    else {
+      var password = CryptoHelper.decode(cipher);
+      await this.loadData(username, password, this.state.date);
+    }
   };
 
 
@@ -87,7 +100,7 @@ export default class ScheduleScreen extends React.Component {
         if (className.includes('<br>')) {
           list.push({
             period: $($(element).find('table')[0]).text(),
-            detail: className,
+            detail: className.replace('&amp;', '&'),
           });
         }
       });
@@ -109,8 +122,9 @@ export default class ScheduleScreen extends React.Component {
           paddingBottom: 48, paddingLeft: 24, paddingRight: 24, paddingTop: 4
         }}
         >
-          <DateTimePicker
+          <DateTimePickerModal
             isVisible={this.state.isDateTimePickerVisible}
+            mode="date"
             onConfirm={this.handleDatePicked}
             onCancel={this.hideDateTimePicker}
             date={new Date(this.state.date)}
@@ -132,10 +146,11 @@ export default class ScheduleScreen extends React.Component {
           {this.state.schedule.length === 0 ? <Text style={{ fontSize: 18, color: 'grey', marginTop: 24 }}>School is not in session on that date</Text> : <View />}
           <View style={{ marginTop: 24 }}>
             {this.state.schedule.map((item, index) => {
-              const period = StringHelper.removeSpaces(item.period.toString()).split('\n')[0];
-              const time = StringHelper.removeSpaces(item.period.toString()).split('\n')[1];
+              const period = StringHelper.removeSpaces(item.period.toString().trim().split('\n')[0]);
+              const time = StringHelper.removeSpaces(item.period.toString().trim().split('\n').slice(-1)[0]);
               const detail = StringHelper.removeSpaces(item.detail.toString()).split('<br>')[1];
               const color = Colors.tintColor;
+
               return (
                 <View key={index} style={{ marginBottom: 24 }}>
                   <TouchableOpacity>

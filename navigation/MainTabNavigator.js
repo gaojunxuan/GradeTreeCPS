@@ -11,13 +11,17 @@ import Colors from '../constants/Colors';
 import AssignmentDetailScreen from '../screens/AssignmentDetailScreen';
 import TranscriptScreen from '../screens/TranscriptScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
+import PaymentScreen from '../screens/PaymentScreen';
+import SwitchStudentScreen from '../screens/SwitchStudentScreen';
+import LabScreen from '../screens/LabScreen';
 
 
 
 const AcademicsStack = createStackNavigator({
   Academics: AcademicsScreen,
   AssignmentList: AssignmentListScreen,
-  AssignmentDetail: AssignmentDetailScreen
+  AssignmentDetail: AssignmentDetailScreen,
+  SwitchStudent: SwitchStudentScreen
 });
 
 AcademicsStack.navigationOptions = {
@@ -32,6 +36,7 @@ AcademicsStack.navigationOptions = {
 
 const AttendanceStack = createStackNavigator({
   Attendance: AttendanceScreen,
+  SwitchStudent: SwitchStudentScreen
 });
 
 AttendanceStack.navigationOptions = {
@@ -47,7 +52,10 @@ AttendanceStack.navigationOptions = {
 const ProfileStack = createStackNavigator({
   Profile: ProfileScreen,
   Transcript: TranscriptScreen,
-  Schedule: ScheduleScreen
+  Schedule: ScheduleScreen,
+  Payment: PaymentScreen,
+  SwitchStudent: SwitchStudentScreen,
+  Lab: LabScreen
 });
 
 ProfileStack.navigationOptions = {
@@ -67,6 +75,6 @@ export default createBottomTabNavigator({
 }, 
 {
   tabBarOptions: {
-    activeTintColor: Colors.tintColor,
+    activeTintColor: Colors.tintColor
   },
 });

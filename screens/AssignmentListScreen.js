@@ -1,10 +1,13 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Alert, AsyncStorage, ActionSheetIOS, Platform } from 'react-native';
 import cio from 'cheerio-without-node-native';
-import Picker from 'react-native-simple-modal-picker';
+import ModalPicker from '../components/ModalPicker';
 import Networking from '../helpers/Networking';
 import StringHelper from '../helpers/StringHelper';
 import Colors from '../constants/Colors';
+import * as SecureStore from 'expo-secure-store';
+import CryptoHelper from '../helpers/CryptoHelper';
+import { Updates } from 'expo';
 
 export default class AssignmentListScreen extends React.Component {
   static navigationOptions = ({ navigation }) => {
@@ -20,31 +23,48 @@ export default class AssignmentListScreen extends React.Component {
 
   constructor(props) {
     super(props);
+    this._isMounted = false;
     this.state = {
-      token: '', assignments: [], grades: [], isGradesLoading: true, isAssignmentListLoading: true, terms: [], currentTermIndex: 0, currentTerm: ''
+      token: '', assignments: [], grades: [], isGradesLoading: true, isAssignmentListLoading: true, terms: [], currentTermIndex: 0, currentTerm: '', cumulative: 'N/A'
     };
   }
 
   async componentDidMount() {
+    this._isMounted = true;
     try {
       const id = this.props.navigation.getParam('code', '0');
+      const term = this.props.navigation.getParam('term', '0');
       const name = this.props.navigation.getParam('name', 'Assignment');
       this.props.navigation.setParams({
         title: name
       });
-      const username = await AsyncStorage.getItem('username');
-      const password = await AsyncStorage.getItem('password');
-      await this.loadData(username, password, id);
+      var username = await SecureStore.getItemAsync('username');
+      var cipher = await SecureStore.getItemAsync('password');
+      if(username === null || cipher === null)
+        Updates.reload();
+      else {
+        var password = CryptoHelper.decode(cipher);
+        if (this._isMounted)
+          await this.loadData(username, password, id);
+        if(term !== 'current') {
+          if (this._isMounted)
+            await this.changeTerm(term)
+        }
+      }
     } catch {
       Alert.alert('Failed to load data. Please check your Internet connection and try again.');
     }
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
   }
 
   // Load the data
   async loadData(username, password, param) {
     const headers = { 'Content-Type': 'multipart/form-data', 'User-Agent': StringHelper.getUserAgentString() };
     const uaHeaders = { 'User-Agent': StringHelper.getUserAgentString() };
-
+    
     const form = new FormData();
     form.append('userEvent', 930);
     form.append('username', username);
@@ -56,7 +76,8 @@ export default class AssignmentListScreen extends React.Component {
       await Networking.login(username, password);
       classListGetResponse = await fetch('https://aspen.cps.edu/aspen/portalClassList.do?navkey=academics.classes.list', { method: 'GET', headers: uaHeaders, credentials: 'include' });
     }
-    this.setState({ token: (await classListGetResponse.text()).match(/name="org.apache.struts.taglib.html.TOKEN" value="(.*?)"/)[1] });
+    if (this._isMounted)
+      this.setState({ token: (await classListGetResponse.text()).match(/name="org.apache.struts.taglib.html.TOKEN" value="(.*?)"/)[1] });
     const assignmentForm = new FormData();
     assignmentForm.append('org.apache.struts.taglib.html.TOKEN', this.state.token);
     assignmentForm.append('userEvent', 2100);
@@ -79,9 +100,18 @@ export default class AssignmentListScreen extends React.Component {
         grades.push({
           id: index, name, weight, avg
         });
-        this.setState({ grades, isGradesLoading: false });
+        if (this._isMounted)
+          this.setState({ grades, isGradesLoading: false });
       }
     });
+
+    //https://aspen.cps.edu/aspen/portalClassDetail.do?navkey=academics.classes.list.detail
+    const cumulative = $($('#contentArea').find($('.detailContainer'))[2]).find($('.detailValue'))[0];
+    if($(cumulative).is('td')) {
+      if (this._isMounted)
+        this.setState({ cumulative: StringHelper.removeLineBreaks($(cumulative).text()) });
+    }
+    
     // get assignments list
     const assignmentsResponse = await fetch('https://aspen.cps.edu/aspen/portalAssignmentList.do?navkey=academics.classes.list.gcd', { method: 'GET', headers: uaHeaders, credentials: 'include' });
     const assignmentData = await assignmentsResponse.text();
@@ -96,7 +126,8 @@ export default class AssignmentListScreen extends React.Component {
         assignments.push({
           name, cat, score, code: $2($2(element).find($2('td'))[1]).attr('id')
         });
-        this.setState({ assignments, isAssignmentListLoading: false });
+        if (this._isMounted)
+          this.setState({ assignments, isAssignmentListLoading: false });
       }
     });
     const terms = [];
@@ -110,18 +141,22 @@ export default class AssignmentListScreen extends React.Component {
       if (text !== 'All') {
         const selected = (selectedStr !== null && selectedStr === 'selected');
         terms.push({ text, value: val, selected });
-        this.setState({ terms });
-        if (selected) { this.setState({ currentTermIndex: termCounter, currentTerm: this.state.terms[termCounter].text }); }
+        if (this._isMounted) {
+          this.setState({ terms });
+          if (selected) { this.setState({ currentTermIndex: termCounter, currentTerm: this.state.terms[termCounter].text }); }
+        }
         termCounter += 1;
       }
     });
-    this.setState({ isGradesLoading: false, isAssignmentListLoading: false });
+    if (this._isMounted)
+      this.setState({ isGradesLoading: false, isAssignmentListLoading: false });
   }
 
   // Change to a different term
   async changeTerm(term) {
-    const username = await AsyncStorage.getItem('username');
-    const password = await AsyncStorage.getItem('password');
+    const username = await SecureStore.getItemAsync('username');
+    const cipher = await SecureStore.getItemAsync('password');
+    const password = await CryptoHelper.decode(cipher);
     this.setState({ assignments: [], isAssignmentListLoading: true });
     const postHeaders = { 'Content-Type': 'multipart/form-data', 'User-Agent': StringHelper.getUserAgentString() };
     const uaHeaders = { 'User-Agent': StringHelper.getUserAgentString() };
@@ -146,7 +181,6 @@ export default class AssignmentListScreen extends React.Component {
     const $2 = cio.load(assignmentData);
     const assignments = [];
     $2('#dataGrid').find($2('.listCell')).each((index, element) => {
-      // console.log($2($2(element).find($2('td'))[0]).text());
       if (!$2($2(element).find($2('td'))[0]).text().includes('No matching records')) {
         const name = $2($2(element).find($2('td'))[1]).text();
         const cat = $2($2(element).find($2('td'))[4]).text();
@@ -162,7 +196,6 @@ export default class AssignmentListScreen extends React.Component {
     const $3 = cio.load(assignmentData);
     let termCounter = 0;
     $3('select[name="gradeTermOid"]').children().each((index, element) => {
-      // console.log($2($2(element).find($2('td'))[0]).text());
       const text = $3(element).text();
       const val = $3(element).attr('value');
       const selectedStr = $3(element).attr('selected');
@@ -186,6 +219,30 @@ export default class AssignmentListScreen extends React.Component {
           paddingLeft: 24, paddingRight: 24, paddingTop: 8, fontSize: 24, fontWeight: 'bold'
         }}
         >
+          Cumulative
+        </Text>
+        <TouchableOpacity style={{ marginLeft: 24, marginRight: 24, marginTop: 12 }}>
+          <View style={{ flexDirection: 'row' }}>
+            <Text style={{ fontSize: 18 }}>Cumulative Grade</Text>
+            <View style={{ flex: 1, alignSelf: 'center', alignItems: 'flex-end' }}>
+              <View style={{
+                flexDirection: 'row', height: 24, width: 80, backgroundColor: StringHelper.getGradeColor(this.state.cumulative), alignItems: 'center', justifyContent: 'center', borderRadius: 8
+              }}
+              >
+                <Text style={{
+                  fontSize: 16, color: 'white', flex: 1, alignSelf: 'center', textAlign: 'center'
+                }}
+                >
+                  {this.state.cumulative}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+        <Text style={{
+          paddingLeft: 24, paddingRight: 24, paddingTop: 28, fontSize: 24, fontWeight: 'bold'
+        }}
+        >
           Categories
         </Text>
         {this.state.grades.length === 0 ? (
@@ -203,8 +260,8 @@ export default class AssignmentListScreen extends React.Component {
             let avg = StringHelper.removeLineBreaks(item.avg.toString());
             const weight = StringHelper.removeLineBreaks(item.weight.toString());
             let color = 'limegreen';
-            if (avg.includes('B')) { color = 'orange'; }
-            if (avg.includes('C') || avg.includes('D') || avg.includes('F')) { color = 'orangered'; }
+            if (avg.includes('B')) { color = 'yellowgreen'; }
+            if (avg.includes('C') || avg.includes('D') || avg.includes('F')) { color = 'orange'; }
             if (avg === '') {
               avg = 'N/A';
               color = 'lightgrey';
@@ -216,7 +273,7 @@ export default class AssignmentListScreen extends React.Component {
                 }}
                 >
                   <View style={{ flexDirection: 'row' }}>
-                    <View style={{ flexDirection: 'column' }}>
+                    <View style={{ flexDirection: 'column', flex: 1 }}>
                       <Text style={{ fontSize: 18 }}>{name}</Text>
                       <Text style={{ fontSize: 14, color: 'grey', marginTop: 4 }}>{weight}</Text>
                     </View>
@@ -279,8 +336,7 @@ export default class AssignmentListScreen extends React.Component {
             fontSize: 18, color: 'grey', marginLeft: 24, marginTop: 24
           }}
           >
-Nothing here
-
+          Nothing here
           </Text>
         ) : <View />}
         <ActivityIndicator animating={this.state.isAssignmentListLoading} style={{ marginTop: 0 }} />
@@ -293,21 +349,23 @@ Nothing here
             let total = 0;
             let percent = NaN;
             let color = 'limegreen';
-            if (score !== 'Ungraded') {
+            if (score === 'E') {
+              score = 'Exempted'
+            }
+            if (score !== 'Ungraded' && score !== 'Exempted') {
               score = score.split('%')[1];
-              if (score !== null) {
+              if (score !== null && score !== undefined) {
                 s = parseFloat(score.split('/')[0].trim());
                 total = parseFloat(score.split('/')[1].trim());
                 percent = s / total;
-                // console.log(percent);
               }
             } else {
               color = 'lightgrey';
             }
 
             if (!isNaN(percent)) {
-              if (percent < 0.9) { color = 'orange'; }
-              if (percent < 0.7) { color = 'orangered'; }
+              if (percent < 0.9) { color = 'yellowgreen'; }
+              if (percent < 0.7) { color = 'orange'; }
             } else { color = 'lightgrey'; }
 
             return (
@@ -318,8 +376,9 @@ Nothing here
                     const { code } = item;
                     let response = await fetch(`https://aspen.cps.edu/aspen/portalAssignmentDetailPopup.do?prefix=GCD&context=academics.classes.list.gcd.detail&oid=${code}`, { method: 'GET', headers: uaHeaders, credentials: 'include' });
                     if (response.status !== 200) {
-                      const username = await AsyncStorage.getItem('username');
-                      const password = await AsyncStorage.getItem('password');
+                      const username = await SecureStore.getItemAsync('username');
+                      const cipher = await SecureStore.getItemAsync('password');
+                      const password = await CryptoHelper.decode(cipher);
                       await Networking.login(username, password);
                       response = await fetch(`https://aspen.cps.edu/aspen/portalAssignmentDetailPopup.do?prefix=GCD&context=academics.classes.list.gcd.detail&oid=${code}`, { method: 'GET', headers: uaHeaders, credentials: 'include' });
                     }
@@ -355,7 +414,6 @@ Nothing here
                           }}
                           >
                             { this.state.showPercent ? ((!isNaN(percent)) ? `${(percent * 100).toFixed(1)}%` : 'N/A') : score }
-
                           </Text>
                         </View>
                       </TouchableOpacity>
@@ -365,7 +423,7 @@ Nothing here
               </View>
             );
           })}
-          <Picker
+          <ModalPicker
             ref={instance => this.termPicker = instance}
             data={this.state.terms}
             label='text'

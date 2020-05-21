@@ -4,6 +4,9 @@ import cio from 'cheerio-without-node-native';
 import Networking from '../helpers/Networking';
 import StringHelper from '../helpers/StringHelper';
 import Colors from '../constants/Colors';
+import * as SecureStore from 'expo-secure-store';
+import CryptoHelper from '../helpers/CryptoHelper';
+import { Updates } from 'expo';
 
 export default class TranscriptScreen extends React.Component {
   static navigationOptions = ({ navigation }) => {
@@ -22,11 +25,16 @@ export default class TranscriptScreen extends React.Component {
     this.state = { transcript: [], isLoading: true };
   }
 
-  async componentWillMount() {
+  async componentDidMount() {
     try {
-      const username = await AsyncStorage.getItem('username');
-      const password = await AsyncStorage.getItem('password');
-      await this.loadData(username, password);
+      var username = await SecureStore.getItemAsync('username');
+      var cipher = await SecureStore.getItemAsync('password');
+      if(username === null || cipher === null)
+        Updates.reload();
+      else {
+        var password = CryptoHelper.decode(cipher);
+        await this.loadData(username, password);                        
+      }
     } catch (ex) {
       Alert.alert('Failed to load data. Please check your Internet connection and try again.');
     }

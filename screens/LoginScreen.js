@@ -5,6 +5,8 @@ import TouchableBounce from 'react-native/Libraries/Components/Touchable/Touchab
 import Colors from '../constants/Colors';
 import Layout from '../constants/Layout';
 import StringHelper from '../helpers/StringHelper';
+import CryptoHelper from '../helpers/CryptoHelper';
+import * as SecureStore from 'expo-secure-store';
 
 export default class LoginScreen extends React.Component {
   constructor(props) {
@@ -22,13 +24,13 @@ export default class LoginScreen extends React.Component {
             paddingLeft: 32, paddingRight: 32, paddingTop: 48, fontSize: 32, fontWeight: 'bold', color: 'white'
           }}
         >
-        Login
+          Login
         </Text>
         <Text style={{
           marginTop: 24, marginLeft: 32, marginRight: 32, color: 'rgba(255,255,255,0.6)', fontSize: 16
         }}
         >
-          Login with your CPS username and password. Parent and teacher (staff) accounts are not supported.
+          Login with your CPS username and password. Teacher (staff) accounts are not supported.
         </Text>
         <View style={[styles.container, { flex: 1, marginLeft: 32, marginTop: 12 }]}>
           <TextInput
@@ -79,11 +81,21 @@ export default class LoginScreen extends React.Component {
                 form.append('org.apache.struts.taglib.html.TOKEN', this.state.token);
                 await fetch('https://aspen.cps.edu/aspen/logon.do', { method: 'POST', body: form, headers: postHeaders, credentials: 'include'  });
                 testResponse = await fetch('https://aspen.cps.edu/aspen/home.do', { method: 'GET', credentials: 'include', headers: uaHeaders });
+                var responseText = await testResponse.text();
+                if(responseText.includes('Family</a>')) {
+                  await AsyncStorage.setItem('accountType', 'parent');
+                }
+                else {
+                  await AsyncStorage.setItem('accountType', 'student');
+                }
                 if (testResponse.status != 200) {
                   Alert.alert('Failed to login', `Status code: ${testResponse.status}`);
                 } else {
-                  await AsyncStorage.setItem('username', this.state.username);
-                  await AsyncStorage.setItem('password', this.state.password);
+                  await SecureStore.setItemAsync("username", this.state.username);
+                  console.log(CryptoHelper.encode(this.state.password));
+                  await SecureStore.setItemAsync("password", CryptoHelper.encode(this.state.password));
+                  // await AsyncStorage.setItem('username', this.state.username);
+                  // await AsyncStorage.setItem('password', this.state.password);
                   Updates.reload();
                 }
               } catch (ex) {
